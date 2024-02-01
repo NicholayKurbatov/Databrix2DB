@@ -1,57 +1,72 @@
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine, inspect, text
-import psycopg2
-from tqdm import tqdm
+from .base import BaseDBConnect, BaseHandler
 
-def get_columns_and_types(table, host, port, user, password, db_name):
-    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}") 
-    inspector = inspect(engine)
-    columns = inspector.get_columns(table)
-    return columns
 
-def check_tabletype_errors(table, host, port, user, password, db_name):
-    return False, ""
+class DBConnect(BaseDBConnect):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        engine = create_engine(
+            f"postgresql+psycopg2://{self.user}:{self.pswd}@/{self.db}?host={self.host}:{self.port}"
+        )
+        self.session_maker = sessionmaker(
+            engine, 
+            class_=Session, 
+            expire_on_commit=False, 
+        )
 
-def test_connection(host, port, user, password, db_name):
-    try:
-        # Создаем движок SQLAlchemy
-        engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}") 
-        # Выполняем простой SQL-запрос
-        result = engine.execute("SELECT 1")
-        # Если запрос выполнен успешно, выводим сообщение об успешном подключении
-        print("Successfully connected to the database.")
-    except Exception as e:
-        # Если при выполнении запроса возникла ошибка, выводим сообщение об ошибке
-        print("Failed to connect to the database.")
-        print(str(e))
+    def get_session(self) -> Session:
+        with self.session_maker() as session:
+            yield session
 
-def load_data_to_sql(data, table, fields_matching, host, port, user, password, db_name, relaxing = False):
-    # Создаем движок SQLAlchemy
-    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}") 
-    total = len(data)
-    progress_bar = tqdm(total=total, position=0, leave=True)
-    k = 0
-    # Начинаем транзакцию
-    with engine.begin() as connection:
-        for row in data:
-            row = {fields_matching.get(key, key): value for key, value in row.items()}
-            # Форматируем SQL запрос
-            sql = text(f"""
-            INSERT INTO {table} ({','.join(row.keys())}) VALUES ({','.join(':' + key for key in row.keys())})
-            ON CONFLICT (ID) DO UPDATE SET
-            {', '.join(f'{key} = excluded.{key}' for key in row.keys())}
-            """)
-            # Выполняем SQL запрос
-            connection.execute(sql, **row)
-            k+=1
-            if k % 100 == 0:
-                progress_bar.update(100)
-                
-def delete_by_id(id, table, host, port, user, password, db_name):
-    # Создаем движок SQLAlchemy
-    engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{db_name}") 
-    # Начинаем транзакцию
-    with engine.begin() as connection:
-        # Форматируем SQL запрос
-        sql = text(f"DELETE FROM {table} WHERE ID = :id")
-        # Выполняем SQL запрос
-        connection.execute(sql, id=id)
+
+class Handler(BaseHandler):
+    def __init__(self, conn_args: dict[str, str | int]):
+        self.session = DBConnect(**conn_args).get_session()
+
+    def check_exist_table(self, table: str) -> bool:
+        return inspect(self.session()).has_table(table)
+
+    def create_table(self, table: str, column_spec: dict):
+        column_settings = []
+        for col in column_spec:
+            col_str = (
+                column_spec[col]['col'] + " " + 
+                column_spec[col]['type'].upper()
+            )
+            if 'primary_key' in column_spec[col]:
+                col_str += " PRIMARY KEY"
+            column_settings.append(col_str)
+
+        column_settings = "\n".join(column_settings)
+        sql = text(f"""
+            CREATE TABLE IF NOT EXIST {table} (
+                {column_settings}
+            )
+        """)
+        self.session.execute(sql)
+        self.session.commit()
+
+    def load_data(self, table: str, column_spec: dict, rows: list[dict]):
+        columns = []
+        primary_key = ""
+        for col in column_spec:
+            if 'primary_key' in column_spec[col]:
+                primary_key = column_spec[col]['col']
+            else:
+                columns.append(column_spec[col]['col'])
+
+        data = Handler.repack_data(column_spec, rows)
+
+        sql = text(f"""
+            INSERT INTO {table} ({','.join([primary_key] + columns)}) 
+            VALUES {','.join(['%s'] * len(rows))}
+            ON CONFLICT ({primary_key}) 
+            DO UPDATE SET
+            {', '.join(f'{key} = excluded.{key}' for key in columns)}
+        """)
+        self.session.execute(sql, data)
+        self.session.commit()
+
+    def delete_data(self, table: str, id_col: str, id: int):
+        pass

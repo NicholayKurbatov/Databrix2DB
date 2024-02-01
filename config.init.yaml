@@ -1,0 +1,67 @@
+b24_key: "https://b24-gxkaa1.bitrix24.ru/rest/1/ibbx11kl5w204lx4/"
+database_type: PostgreSQL # available values: "MySQL", "PostgreSQL", "ClickHouse"
+
+db_config:
+  host: localhost
+  port: 5455
+  user: "main-user"
+  pswd: "main-user"
+  db: db
+
+export_tables: # If value = null, export will be skipped
+  tasks: 
+    db_table: tasks_tab
+    databrix_method: task.item.getlist.json
+
+
+tasks: # Key in bitrix24: Value in DB. If you write `null` instead of `key: value`, export of this data type will be skipped.
+  ID: id
+  PARENT_ID: parent_id
+  DEPENDS_ON: depends_on
+  GROUP_ID: group_id
+  TITLE: title
+  DESCRIPTION: desc
+  TAGS: tags
+  STATUS: status
+  PRIORITY: priority
+  DEADLINE: deadline
+  START_DATE_PLAN: start_date_plan
+  END_DATE_PLAN: end_date_plan
+  ACCOMPLICES: accomplices
+  AUDITORS: auditors
+  RESPONSIBLE_ID: responsible_id
+  RESPONSIBLE_NAME: responsible_name
+  RESPONSIBLE_LAST_NAME: responsible_last_name
+  RESPONSIBLE_SECOND_NAME: responsible_second_name
+  TIME_ESTIMATE: time_estimate
+  CREATED_DATE: create_date
+  DATE_START: date_start
+  DURATION_FACT: duration_fact
+  DURATION_PLAN: duration_plan
+  DURATION_TYPE: duration_type
+  CREATED_BY: create_by
+  CREATED_BY_NAME: create_by_name
+  CREATED_BY_LAST_NAME: create_by_last_name
+  CREATED_BY_SECOND_NAME: create_by_second_name
+  DECLINE_REASON: decline_reason
+  CHANGED_DATE: change_date
+  CHANGED_BY: change_by
+  STATUS_CHANGED_DATE: status_changed_date
+  STATUS_CHANGED_BY: status_changed_by
+  CLOSED_DATE: close_date
+  CLOSED_BY: closed_by
+  MARK: mark
+  TIME_SPENT_IN_LOGS: time_spent_in_logs
+  SITE_ID: site_id
+  MULTITASK: multitask
+
+# filter_date: # filter for all of exports.
+#  lower: 2021-01-01 # If value = null, there are no limitations
+#  upper: null
+
+# BETA FEATURES
+# custom preprocessing functions
+# tasks_functions: null # Key in bitrix24: function name in preprocessing_functions.py.
+# # If you write `null` instead of `key: value`, export of this data type will be skipped.
+#  ID: add_million_to_id
+#  UF_CRM_CUSTOMFIELD2: function_name2
