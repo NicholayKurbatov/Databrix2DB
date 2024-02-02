@@ -1,6 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import Generator
 from ssl import create_default_context, CERT_REQUIRED
+from utils import type_caster
 
 
 class BaseSession(ABC):
@@ -61,6 +62,7 @@ class BaseHandler(ABC):
         for row in rows:
             db_row = {}
             for col in row:
-               db_row[column_spec[col]['col']] = row[col]
+               db_row[column_spec[col]['col']] = \
+                type_caster(row[col], column_spec[col]['type'])
             data.append(db_row)
         return data

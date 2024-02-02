@@ -4,3 +4,4 @@ cf/*handler*
 cf/*requirements*
 cf/*.yaml
 env/
+.pytest_cache

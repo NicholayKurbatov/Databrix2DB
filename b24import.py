@@ -1,5 +1,5 @@
 import yaml
-from handlers import base, sql_handler, postgresql_handler, clickhouse_handler
+from handlers import base, postgresql_handler, clickhouse_handler
 from utils import get_data_from_databrics
 
 import warnings
@@ -37,7 +37,7 @@ for table in config['export_tables']:
         )
     del db_table
 
-
+# main part
 for table in config['export_tables']:
     # get data from bitrix24
     db_table = config['export_tables'][table]['db_table']
