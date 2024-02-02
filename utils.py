@@ -31,7 +31,7 @@ DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 TYPE_MAPPING = {
     'integer': lambda x: int(x),
     'string': lambda x: x,
-    'datetime': lambda x: datetime.strftime(x, DATETIME_FORMAT)
+    'datetime': lambda x: datetime.strptime(x + " 00:00:00", DATETIME_FORMAT)
 }
 
 
