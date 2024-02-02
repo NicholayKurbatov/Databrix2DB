@@ -1,5 +1,4 @@
 import psycopg2
-from typing import Generator
 from .base import BaseDBConnect, BaseHandler
 
 
@@ -10,7 +9,7 @@ class DBConnect(BaseDBConnect):
         # get a connection, if a connect cannot be made an exception will be raised here
         self.conn = psycopg2.connect(conn_string)
 
-    def run_sql(self, sql, fetch=False):
+    def run_sql(self, sql: str, fetch: bool = False):
         with self.conn.cursor() as session:
             session.execute(sql)
             res = None
@@ -18,7 +17,7 @@ class DBConnect(BaseDBConnect):
                 res = session.fetchall()
         return res
 
-    def insert_many(self, sql, data):
+    def insert_many(self, sql: str, data=list[tuple]):
         with self.conn.cursor() as session:
             session.executemany(sql, data)
             self.conn.commit()
@@ -55,7 +54,7 @@ class Handler(BaseHandler):
                 col_str += " PRIMARY KEY"
             column_settings.append(col_str)
 
-        column_settings = "\n,".join(column_settings)
+        column_settings = ",\n".join(column_settings)
         sql = f"""
             CREATE TABLE IF NOT EXISTS {table} (
                 {column_settings}
@@ -73,7 +72,6 @@ class Handler(BaseHandler):
                 columns.append(column_spec[col]['col'])
 
         data = Handler.repack_data(column_spec, rows)
-        print(data)
 
         sql = f"""
             INSERT INTO {table} ({','.join([primary_key] + columns)}) 

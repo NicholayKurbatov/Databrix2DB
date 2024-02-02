@@ -1,5 +1,4 @@
 from abc import abstractmethod, ABC
-from typing import Generator
 from ssl import create_default_context, CERT_REQUIRED
 from utils import type_caster
 
@@ -17,7 +16,7 @@ class BaseSession(ABC):
         pass
 
 
-class BaseDBConnect(object):
+class BaseDBConnect(ABC):
     def __init__(self, host: str, port: int, user: str, password: str, db_name: str, ssl: str = None) -> None:
         self.host = host
         self.port = port
@@ -32,7 +31,12 @@ class BaseDBConnect(object):
             self.ssl.verify_mode = CERT_REQUIRED
             self.ssl.check_hostname = True
 
-    def get_session() -> Generator[BaseSession, None, None]:
+    @abstractmethod
+    def run_sql(self, sql: str, fetch: bool = False):
+        pass
+
+    @abstractmethod
+    def insert_many(self, sql: str, data=list[tuple]):
         pass
 
 
